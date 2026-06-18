@@ -1,4 +1,10 @@
-__pycache__/senticnet.cpython-313.pyc
-__pycache__/senticnet_dataset.cpython-313.pyc
-__pycache__/senticnet_dict.cpython-313.pyc
+Code/__pycache__/senticnet.cpython-313.pyc
+Code/__pycache__/senticnet_dataset.cpython-313.pyc
+Code/__pycache__/senticnet_dict.cpython-313.pyc
 datasets/__pycache__/senticnet_dataset.cpython-313.pyc
+/datasets
+Code/__pycache__/config.cpython-313.pyc
+/_old
+Code/__pycache__/data_manager.cpython-313.pyc
+Code/__pycache__/metrics.cpython-313.pyc
+Code/__pycache__/visuals.cpython-313.pyc
