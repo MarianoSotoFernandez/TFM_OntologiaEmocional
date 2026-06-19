@@ -68,6 +68,11 @@ ENCODER_B = SentenceTransformer(
     device=DEVICE
 )
 
+ENCODER_C = SentenceTransformer(
+    "Qwen/Qwen3-Embedding-0.6B",
+    device=DEVICE
+)
+
 ENCODER_BATCH_SIZE = 512
 
 # =============================================================================

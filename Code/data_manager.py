@@ -56,7 +56,7 @@ from nltk.corpus import wordnet as wn
 from config import (
     STEMMER,
     LEMMATIZER,
-    ENCODER_A,
+    ENCODER_C,
     ENCODER_BATCH_SIZE,
     RANDOM_SEED,
     NUMERIC_COLUMNS
@@ -244,7 +244,7 @@ def preprocess_data(_df: pd.DataFrame, stemming: bool=False, lemmatize: bool=Fal
 
 
 # Particionar datos
-def get_splits(X: np.array, Y: np.array, df_data: pd.DataFrame, sem: dict, encoder=ENCODER_A, p:float = 0.5):
+def get_splits(X: np.array, Y: np.array, df_data: pd.DataFrame, sem: dict, encoder=ENCODER_C, p:float = 0.5):
     """
     Divide el conjunto de datos y prepara las particiones asociadas.
 
@@ -398,7 +398,7 @@ def gen_verbalization(X: np.array, sem: dict, mode: str="keep"):
 # =============================================================================
 # Generación de embeddings
 # =============================================================================
-def gen_embeddings(X: np.array, encoder=ENCODER_A):
+def gen_embeddings(X: np.array, encoder=ENCODER_C):
     """
     Genera los embeddings de X
 
@@ -413,7 +413,11 @@ def gen_embeddings(X: np.array, encoder=ENCODER_A):
     embeddings_texto:
         Array de embeddings
     """
-    embeddings_texto = encoder.encode(X, batch_size=ENCODER_BATCH_SIZE, normalize_embeddings=True, show_progress_bar=False)
+    if ENCODER_C == encoder:
+        embeddings_texto = encoder.encode(X, prompt="Instruct: Represent the affective meaning of this concept\nQuery: ",
+                                          batch_size=ENCODER_BATCH_SIZE, normalize_embeddings=True, show_progress_bar=False)
+    else:
+        embeddings_texto = encoder.encode(X, batch_size=ENCODER_BATCH_SIZE, normalize_embeddings=True, show_progress_bar=False)
     return embeddings_texto
 
 

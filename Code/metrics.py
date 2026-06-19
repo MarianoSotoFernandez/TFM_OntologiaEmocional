@@ -232,7 +232,6 @@ def emoVSemo(X: np.array, y: np.array):
 
     for i, emo1 in enumerate(emo_list):
         for j, emo2 in enumerate(emo_list):
-            # Embedding
             X_emo1 = X[y == emo1]
             X_emo2 = X[y == emo2]
             results_euc[i][j] = euclidean_distances(X_emo1, X_emo2).mean()
@@ -328,16 +327,25 @@ def run_allMetrics(Xt, Xn, Xs, Xe, y, figsize=(8,8)):
     print(f"Distancia euclidea por semánticos:\t {eucD_sem}")
     print(f"Similitud coseno por semánticos:\t {cosS_sem}")
 
+
     # Cohesión por emoción
     ##
     print("="*PRINTLINE_SIZE)
     print("Cálculo de la similitud entre conceptos por emoción")
     print("="*PRINTLINE_SIZE)
 
-    hm_euc_eve, hm_cos_eve = emoVSemo(Xe, y)
+    # Cuantificación numérica
+    hmn_euc_eve, hmn_cos_eve = emoVSemo(Xn, y)
 
-    plot_heatmap(hm_euc_eve, emo_list, title="Distancias euclídeas", figsize=figsize)
-    plot_heatmap(hm_cos_eve, emo_list, title="Similitudes coseno", figsize=figsize)
+    plot_heatmap(hmn_euc_eve, emo_list, title="Distancias euclídeas - Real", figsize=figsize)
+    plot_heatmap(hmn_cos_eve, emo_list, title="Similitudes coseno - Real", figsize=figsize)
+
+    # Embeddings
+    hme_euc_eve, hme_cos_eve = emoVSemo(Xe, y)
+    
+    plot_heatmap(hme_euc_eve, emo_list, title="Distancias euclídeas - Embeddings", figsize=figsize)
+    plot_heatmap(hme_cos_eve, emo_list, title="Similitudes coseno - Embeddings", figsize=figsize)
+
 
     # Clustering
     ##
