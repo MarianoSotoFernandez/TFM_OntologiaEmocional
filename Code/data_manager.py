@@ -47,6 +47,7 @@ import pandas as pd
 # =============================================================================
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from nltk.corpus import wordnet as wn
 
 
 # =============================================================================
@@ -55,7 +56,7 @@ from sklearn.preprocessing import StandardScaler
 from config import (
     STEMMER,
     LEMMATIZER,
-    ENCODER,
+    ENCODER_A,
     ENCODER_BATCH_SIZE,
     RANDOM_SEED,
     NUMERIC_COLUMNS
@@ -243,7 +244,7 @@ def preprocess_data(_df: pd.DataFrame, stemming: bool=False, lemmatize: bool=Fal
 
 
 # Particionar datos
-def get_splits(X: np.array, Y: np.array, df_data: pd.DataFrame, sem: dict, p:float = 0.5):
+def get_splits(X: np.array, Y: np.array, df_data: pd.DataFrame, sem: dict, encoder=ENCODER_A, p:float = 0.5):
     """
     Divide el conjunto de datos y prepara las particiones asociadas.
 
@@ -257,6 +258,8 @@ def get_splits(X: np.array, Y: np.array, df_data: pd.DataFrame, sem: dict, p:flo
         DataFrame con cuantificación de los conceptos
     sem: dict
         Conjuntos de semánticos acorde a X
+    encoder:
+        Modelo a utilizar para generar los embeddings
     p: float
         Tamaño del subconjunto de datos a extraer.
         p es porcentaje si p<1 y será cantidad si p >= 1
@@ -285,13 +288,64 @@ def get_splits(X: np.array, Y: np.array, df_data: pd.DataFrame, sem: dict, p:flo
     # Preparar semánticos
     Xs = np.array([sem[k] for k in Xt])
     # Generar embeddings
-    Xe = gen_embeddings(Xt)
+    Xe = gen_embeddings(Xt, encoder=encoder)
 
     return Xt, Xn, Xs, Xe, y
 
 
+# Extraer definición de concepto
+def get_concept_text(concept: str):
+    """
+    Extrae una definición del concepto de WordNet
+
+    Parameters
+    ----------
+    concept: str
+        Concepto a definir
+
+    Returns
+    -------
+    str
+        Cadena con el concepto enriquecido por un ejemplo de uso si
+        lo tiene; si no, por su definición, si se ha encontrado una; si no, se devuelve el propio
+        concepto.
+    """ 
+    # Caso 1. Lookup directo
+    synsets = wn.synsets(concept)
+    if synsets:
+        if len(synsets[0].examples()) == 1:
+            return f"{synsets[0].examples()}"
+        elif len(synsets[0].examples()) > 1:
+            return f"{synsets[0].examples()[0]}"
+        return f"{synsets[0].definition()}"
+    
+    # Caso 2. Con espacios
+    term = concept.replace("_", " ")
+    synsets = wn.synsets(term)
+    if synsets:
+        if len(synsets[0].examples()) == 1:
+            return f"{synsets[0].examples()}"
+        elif len(synsets[0].examples()) > 1:
+            return f"{synsets[0].examples()[0]}"
+        return f"{synsets[0].definition()}"
+    
+    # Caso 3. Palabra más larga del concepto
+    words = term.split()
+    head = max(words, key=lambda w: len(wn.synsets(w)))
+    synsets = wn.synsets(head)
+    if synsets:
+        if len(synsets[0].examples()) == 1:
+            return f"{synsets[0].examples()}"
+        elif len(synsets[0].examples()) > 1:
+            return f"{synsets[0].examples()[0]}"
+        return f"{synsets[0].definition()}"
+    
+    # Caso 4. Default: concept
+    return concept
+
+
 # Generar verbalización
-def gen_verbal(X: np.array, Xe: dict, y: np.array):
+def gen_verbalization(X: np.array, sem: dict, mode: str="keep"):
     """
     Genera una verbalización de los datos.
 
@@ -299,39 +353,52 @@ def gen_verbal(X: np.array, Xe: dict, y: np.array):
     ----------
     X : np.array
         Array de conceptos
-    Xe: np.array
-        Array de semánticos por concepto
-    y : np.array
-        Objetivos (emociones)
+    sem: dict ("concept": semánticos)
+        Dictionarios de semánticos por concepto
+    mode: str
+        Tratamiento de los conceptos no presentes en WordNet:
+        - "keep": conserva el concepto como su propia definición
+        - "drop": elimina el concepto del conjunto resultante
 
 
     Returns
     -------
-    Xpe: np.array
-        Array de conceptos verbalizados para comparación con semánticos
-    Xpe: np.array
-        Array de conceptos verbalizados para comparación con conceptos
-        cuantificados
+    Xv: np.array
+        Array de conceptos verbalizados
+    Xvs: np.array
+        Array de semánticos verbalizados por concepto
+    mask: np.array
+        Máscara de instancias conservadas
     """
-    Xpe = []
-    Xpn = []
-    for i in range(len(y)):
-        # Para comparación con semánticos
-        Xpe.append(f"{X[i]} is a concept associated with {y[i]}.")
-        # Para comparación con numéricos
-        text = f"{X[i]} is a concept related to"
-        for s in Xe[i]:
-            text += f" {s}"
-        text += "."
-        Xpn.append(text)
-    
-    return np.array(Xpe), np.array(Xpn) 
+    Xv = []
+    Xvs = []
+    mask = []
+    for x in X:
+        # Verbalizar conceptos
+        gloss = get_concept_text(x)
+        if x == gloss and "drop" == mode:
+            mask.append(False)
+            continue
+
+        mask.append(True)
+        Xv.append(f"{x}: {gloss}")
+
+        # Verbalizar semánticos
+        vs = []
+        for s in sem[x]:
+            gloss = get_concept_text(s)
+            vs.append(f"{s}: {gloss}")
+
+        Xvs.append(np.array(vs))
+    Xv = np.array(Xv)
+    mask = np.array(mask)
+    return Xv, Xvs, mask
 
 
 # =============================================================================
 # Generación de embeddings
 # =============================================================================
-def gen_embeddings(X: np.array):
+def gen_embeddings(X: np.array, encoder=ENCODER_A):
     """
     Genera los embeddings de X
 
@@ -339,13 +406,14 @@ def gen_embeddings(X: np.array):
     ----------
     X : np.array
         Array de conceptos
-
+    encoder:
+        Modelo a utilizar para generar los embeddings
     Returns
     -------
     embeddings_texto:
         Array de embeddings
     """
-    embeddings_texto = ENCODER.encode(X, batch_size=ENCODER_BATCH_SIZE, normalize_embeddings=True, show_progress_bar=False)
+    embeddings_texto = encoder.encode(X, batch_size=ENCODER_BATCH_SIZE, normalize_embeddings=True, show_progress_bar=False)
     return embeddings_texto
 
 

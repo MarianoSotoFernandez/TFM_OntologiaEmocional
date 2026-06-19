@@ -58,8 +58,13 @@ LEMMATIZER = lambda x: WordNetLemmatizer().lemmatize(x)
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-ENCODER = SentenceTransformer(
+ENCODER_A = SentenceTransformer(
     "paraphrase-multilingual-mpnet-base-v2",
+    device=DEVICE
+)
+
+ENCODER_B = SentenceTransformer(
+    "BAAI/bge-large-en-v1.5",
     device=DEVICE
 )
 

@@ -135,16 +135,18 @@ def calculate_clusters(X: np.array, emo_list: np.array, mode: str = "kmeans", me
 
     Returns
     -------
-    results: dict ("best_score": float, "best_cluster": cluster)
-        Diccionario con el mejor cluster y resultado
+    results: dict ("best_score": float, "best_cluster": cluster, "target_score": float, "target_cluster": cluster)
+        Diccionario con el mejor cluster y resultado, y los objetivos (resultado y cluster para k=num_classes)
     """
 
     results ={
         "best_score": -1,
         "best_cluster": None,
+        "target_score": -1,
+        "target_cluster": None
     }
 
-    for k in range(2, len(emo_list)):
+    for k in range(2, len(emo_list)+1):
         if "kmeans" == mode:
             clusters_k = KMeans(k, init="k-means++", max_iter=500, random_state=RANDOM_SEED).fit(X)
         elif "agglomerative" == mode:
@@ -158,6 +160,10 @@ def calculate_clusters(X: np.array, emo_list: np.array, mode: str = "kmeans", me
         if results["best_score"] <= silk:
             results["best_score"] = silk
             results["best_cluster"] = clusters_k
+        # Guardar objetivo
+        if k == len(emo_list):
+            results["target_score"] = silk
+            results["target_cluster"] = clusters_k
 
     return results
 
@@ -362,5 +368,31 @@ def run_allMetrics(Xt, Xn, Xs, Xe, y, figsize=(8,8)):
     plot_clusters_3d_plotly(Xe, res_ek["best_cluster"].labels_,  y, title=f"Embe-kmeans (k={res_ek["best_cluster"].n_clusters})")
     plot_clusters_3d_plotly(Xe, res_eae["best_cluster"].labels_, y, title=f"Embe-agglom euc. (k={res_eae["best_cluster"].n_clusters})")
     plot_clusters_3d_plotly(Xe, res_eac["best_cluster"].labels_, y, title=f"Embe-agglom cos. (k={res_eac["best_cluster"].n_clusters})")
+
+    print("="*PRINTLINE_SIZE)
+    print("Cálculo de los clusters para k=Número_emociones")
+    print("="*PRINTLINE_SIZE)
+    
+    # Mejores coeficiente de Silhouette
+    print(f"Coef. Silhouette - Real KMeans       [k={res_rk["target_cluster"].n_clusters}]: {res_rk["target_score"]}")
+    print(f"Coef. Silhouette - Real Agglom (Euc) [k={res_rae["target_cluster"].n_clusters}]: {res_rae["target_score"]}")
+    print(f"Coef. Silhouette - Real Agglom (Cos) [k={res_rac["target_cluster"].n_clusters}]: {res_rac["target_score"]}")
+    print(f"Coef. Silhouette - Embe KMeans       [k={res_ek["target_cluster"].n_clusters}]: {res_ek["target_score"]}")
+    print(f"Coef. Silhouette - Embe Agglom (Euc) [k={res_eae["target_cluster"].n_clusters}]: {res_eae["target_score"]}")
+    print(f"Coef. Silhouette - Embe Agglom (Cos) [k={res_eac["target_cluster"].n_clusters}]: {res_eac["target_score"]}")
+    # Mejores clusters - Gráficas fijas
+    plot_clusters_3d(Xn, res_rk["target_cluster"].labels_, title=f"Real-kmeans (k={res_rk["target_cluster"].n_clusters})", figsize=figsize)
+    plot_clusters_3d(Xn, res_rae["target_cluster"].labels_, title=f"Real-agglom euc. (k={res_rae["target_cluster"].n_clusters})", figsize=figsize)
+    plot_clusters_3d(Xn, res_rac["target_cluster"].labels_, title=f"Real-agglom cos. (k={res_rac["target_cluster"].n_clusters})", figsize=figsize)
+    plot_clusters_3d(Xe, res_ek["target_cluster"].labels_, title=f"Embe-kmeans (k={res_ek["target_cluster"].n_clusters})", figsize=figsize)
+    plot_clusters_3d(Xe, res_eae["target_cluster"].labels_, title=f"Embe-agglom euc. (k={res_eae["target_cluster"].n_clusters})", figsize=figsize)
+    plot_clusters_3d(Xe, res_eac["target_cluster"].labels_, title=f"Embe-agglom cos. (k={res_eac["target_cluster"].n_clusters})", figsize=figsize)
+    #Mejores clusters - Gráficas dinámicas
+    plot_clusters_3d_plotly(Xn, res_rk["target_cluster"].labels_,  y, title=f"Real-kmeans (k={res_rk["target_cluster"].n_clusters})")
+    plot_clusters_3d_plotly(Xn, res_rae["target_cluster"].labels_, y, title=f"Real-agglom euc. (k={res_rae["target_cluster"].n_clusters})")
+    plot_clusters_3d_plotly(Xn, res_rac["target_cluster"].labels_, y, title=f"Real-agglom cos. (k={res_rac["target_cluster"].n_clusters})")
+    plot_clusters_3d_plotly(Xe, res_ek["target_cluster"].labels_,  y, title=f"Embe-kmeans (k={res_ek["target_cluster"].n_clusters})")
+    plot_clusters_3d_plotly(Xe, res_eae["target_cluster"].labels_, y, title=f"Embe-agglom euc. (k={res_eae["target_cluster"].n_clusters})")
+    plot_clusters_3d_plotly(Xe, res_eac["target_cluster"].labels_, y, title=f"Embe-agglom cos. (k={res_eac["target_cluster"].n_clusters})")
 
 
