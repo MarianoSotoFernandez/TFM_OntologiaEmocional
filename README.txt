@@ -32,7 +32,6 @@ ESTRUCTURA DEL PROYECTO
 proyecto/
 │
 ├── Code/                          # Código fuente principal
-│   ├── __pycache__/               # Caché de módulos compilados por Python (auto-generado)
 │   ├── config.py                  # Configuración global del proyecto (rutas, hiperparámetros,
 │   │                              # constantes compartidas entre módulos)
 │   ├── data_manager.py            # Gestión y preprocesamiento de datos: carga del dataset,
@@ -49,7 +48,6 @@ proyecto/
 │                                  # exploración inicial de los datos
 │
 └── datasets/                      # Datos y recursos ontológicos
-    ├── __pycache__/               # Caché de módulos Python (auto-generado)
     ├── license.txt                # Licencia de uso del dataset SenticNet
     └── senticnet_dataset.py       # Dataset SenticNet
 
@@ -91,7 +89,7 @@ REQUISITOS
 
   - Python 3.13+
   - Jupyter Notebook / JupyterLab
-  - Dependencias recomendadas:
+  - Dependencias necesarias:
       pip install numpy pandas scikit-learn matplotlib plotly torch nltk
 	sentence-transformers
 
@@ -106,12 +104,5 @@ USO RÁPIDO
        - main_modelB.ipynb
        - main_modelC.ipynb
   4. Comparar resultados con las métricas generadas por metrics.py.
-
---------------------------------------------------------------------------------
-NOTAS
---------------------------------------------------------------------------------
-
-  - Los directorios __pycache__/ son generados automáticamente por Python
-    y no deben modificarse ni incluirse en control de versiones (.gitignore).
 
 ================================================================================
